@@ -1,0 +1,46 @@
+# Vector de tipo de energía
+energia <- c(rep("Renovable", 10), rep("No Renovable", 10))
+
+# Vector de consumo diario en kWh (con algunos valores NA)
+consumo <- c(NA, 150, 200, 250, NA, 300, 350, 400, NA, 450, 500, 550, 600, NA, 650, 700, 750, NA, 800, 850)
+
+# Vector de costo por kWh
+costo_kwh <- c(rep(0.12, 10), rep(0.15, 10))
+
+# Calcular la mediana del consumo diario
+mediana_consumo <- median(consumo, na.rm = TRUE)
+
+# Reemplazar los valores NA con la mediana
+consumo[is.na(consumo)] <- mediana_consumo
+
+# Crear el dataframe
+df_consumo <- data.frame(energia, consumo, costo_kwh)
+
+# Agregar columna de costo total
+df_consumo$costo_total <- df_consumo$consumo * df_consumo$costo_kwh
+
+# Calcular el total de consumo y el costo total por tipo de energía
+total_consumo <- aggregate(consumo ~ energia, data = df_consumo, sum)
+total_costo <- aggregate(costo_total ~ energia, data = df_consumo, sum)
+
+# Calcular la media del consumo diario por tipo de energía
+media_consumo <- aggregate(consumo ~ energia, data = df_consumo, mean)
+
+# Agregar columna de ganancia con un aumento del 10%
+df_consumo$ganancia <- df_consumo$costo_total * 1.1
+
+# Ordenar el dataframe por costo_total en orden descendente
+df_consumo <- df_consumo[order(-df_consumo$costo_total), ]
+
+# Extraer las tres filas con el mayor costo_total
+top_3_costos <- head(df_consumo, 3)
+
+# Crear la lista resumen_energia
+resumen_energia <- list(
+  total_consumo = total_consumo,
+  total_costo = total_costo,
+  top_3_costos = top_3_costos
+)
+
+# Mostrar la lista resumen_energia
+print(resumen_energia)
