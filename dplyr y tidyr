@@ -1,0 +1,58 @@
+# Instalar y cargar las librerías si es necesario
+if (!require(dplyr)) install.packages("dplyr")
+if (!require(tidyr)) install.packages("tidyr")
+
+library(dplyr)
+library(tidyr)
+
+# Cargar el dataset mtcars
+data(mtcars)
+df <- as.data.frame(mtcars)
+print("Dataset cargado:")
+print(head(df))
+
+df_filtered <- df %>%
+  select(mpg, cyl, hp, gear) %>%
+  filter(cyl > 4)
+print("Datos filtrados:")
+print(head(df_filtered))
+
+df_sorted <- df_filtered %>%
+  arrange(desc(hp)) %>%
+  rename(consumo = mpg, potencia = hp)
+print("Datos ordenados y renombrados:")
+print(head(df_sorted))
+
+df_with_efficiency <- df_sorted %>%
+  mutate(eficiencia = consumo / potencia)
+print("Nueva columna 'eficiencia' añadida:")
+print(head(df_with_efficiency))
+
+df_aggregated <- df_with_efficiency %>%
+  group_by(cyl) %>%
+  summarise(consumo_medio = mean(consumo), potencia_maxima = max(potencia))
+print("Datos agregados por 'cyl':")
+print(df_aggregated)
+
+df_transmission <- data.frame(
+  gear = c(3, 4, 5),
+  tipo_transmision = c("Manual", "Automática", "Semiautomática")
+)
+
+df_joined <- left_join(df_with_efficiency, df_transmission, by = "gear")
+print("Dataframes unidos:")
+print(head(df_joined))
+
+df_long <- df_joined %>%
+  pivot_longer(cols = c(consumo, potencia, eficiencia), names_to = "medida", values_to = "valor")
+print("Datos en formato largo:")
+print(head(df_long))
+
+df_wide <- df_long %>%
+  group_by(cyl, gear, tipo_transmision, medida) %>%
+  summarise(valor = mean(valor, na.rm = TRUE)) %>%
+  pivot_wider(names_from = medida, values_from = valor)
+print("Datos transformados de nuevo a formato ancho:")
+print(head(df_wide))
+
+
