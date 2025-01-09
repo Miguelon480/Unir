@@ -1,0 +1,31 @@
+## Índice de Contenido
+1. Introducción
+2. Análisis de Datos
+   1. Carga de Datos
+   2. Tablas y Gráficos
+3. Conclusiones
+## Introducción
+El propósito de este documento es realizar un análisis detallado del conjunto de datos `mtcars` disponible en R. A continuación, se presentan los puntos clave que se abordarán en el análisis:
+
+1. **Carga de Datos**: Selección y carga del conjunto de datos.
+2. **Análisis de Datos**: Visualización y análisis mediante tablas y gráficos.
+3. **Conclusiones**: Resumen de los hallazgos principales.
+# Cargar el conjunto de datos mtcars
+data(mtcars)
+# Mostrar las primeras filas del conjunto de datos con kable
+library(knitr)
+kable(head(mtcars))
+
+# Tabla interactiva con DT
+library(DT)
+datatable(mtcars)
+
+# Gráfico de dispersión
+library(ggplot2)
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  labs(title = "Relación entre Peso y Millas por Galón",
+       x = "Peso (1000 lbs)",
+       y = "Millas por Galón")
+## Conclusiones
+En esta sección, resumiremos los hallazgos clave del análisis realizado sobre el conjunto de datos `mtcars`.
