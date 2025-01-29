@@ -1,0 +1,70 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+
+# Cargar los archivos CSV en DataFrames
+ventas_df = pd.read_csv('/workspace/ventas_peliculas.csv')
+promocion_df = pd.read_csv('/workspace/promocion_peliculas.csv')
+
+# Realizar un left join sobre las columnas 'fecha' y 'titulo'
+combined_df = pd.merge(ventas_df, promocion_df, on=['fecha', 'titulo'], how='left', validate='1:m')
+
+# Rellenar los valores nulos resultantes
+combined_df.fillna(0, inplace=True)
+
+# Identificar valores nulos
+null_values = combined_df.isna().sum()
+print("Valores nulos en cada columna:\n", null_values)
+
+# Gráfico de líneas para las ventas de boletos semanales
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=combined_df, x='fecha', y='ventas_boletos')
+plt.title('Ventas de Boletos Semanales')
+plt.xlabel('Fecha')
+plt.ylabel('Ventas de Boletos')
+plt.show()
+
+# Gráfico de barras para las ventas promedio de boletos en semanas con y sin eventos promocionales
+plt.figure(figsize=(10, 6))
+sns.barplot(data=combined_df, x='eventos_promocionales', y='ventas_boletos')
+plt.title('Ventas Promedio de Boletos: Semanas con vs. sin Eventos Promocionales')
+plt.xlabel('Eventos Promocionales')
+plt.ylabel('Ventas Promedio de Boletos')
+plt.show()
+
+# Box plot para identificar outliers en las ventas de boletos
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=combined_df, y='ventas_boletos')
+plt.title('Detección de Outliers en Ventas de Boletos')
+plt.ylabel('Ventas de Boletos')
+plt.show()
+
+# Calcular la correlación entre las variables
+correlation_matrix = combined_df[['ventas_boletos', 'calificacion', 'eventos_promocionales', 'participacion_promocion']].corr()
+print("Matriz de correlación:\n", correlation_matrix)
+
+# Preparar los datos para el modelo de regresión
+X = combined_df[['calificacion', 'eventos_promocionales', 'participacion_promocion']]
+y = combined_df['ventas_boletos']
+
+# Añadir una constante al modelo
+X = sm.add_constant(X)
+
+# Entrenar el modelo de regresión lineal
+model = sm.OLS(y, X).fit()
+
+# Resumen del modelo
+print(model.summary())
+
+# Realizar predicciones
+predictions = model.predict(X)
+
+# Gráfico comparando los valores reales frente a los predichos
+plt.figure(figsize=(10, 6))
+plt.scatter(y, predictions)
+plt.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=2)
+plt.title('Valores Reales vs. Predichos')
+plt.xlabel('Valores Reales')
+plt.ylabel('Valores Predichos')
+plt.show()
