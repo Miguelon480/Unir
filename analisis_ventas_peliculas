@@ -3,68 +3,91 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.api as sm
 
-# Cargar los archivos CSV en DataFrames
+# Cargar los datos de los archivos CSV
 ventas_df = pd.read_csv('/workspace/ventas_peliculas.csv')
-promocion_df = pd.read_csv('/workspace/promocion_peliculas.csv')
+promociones_df = pd.read_csv('/workspace/promocion_peliculas.csv')
 
-# Realizar un left join sobre las columnas 'fecha' y 'titulo'
-combined_df = pd.merge(ventas_df, promocion_df, on=['fecha', 'titulo'], how='left', validate='1:m')
+# Ver las primeras filas para entender la estructura
+print(ventas_df.head())
+print(promociones_df.head())
 
-# Rellenar los valores nulos resultantes
-combined_df.fillna(0, inplace=True)
+# Combinación de los DataFrames por las columnas 'fecha' y 'titulo'
+datos_combinados = pd.merge(ventas_df, promociones_df, on=['fecha', 'titulo'], how='left', validate="1:m")
+
+# Verificar la estructura de los datos combinados
+print(datos_combinados.head())
 
 # Identificar valores nulos
-null_values = combined_df.isna().sum()
-print("Valores nulos en cada columna:\n", null_values)
+valores_nulos = datos_combinados.isna().sum()
+print(valores_nulos)
 
-# Gráfico de líneas para las ventas de boletos semanales
-plt.figure(figsize=(10, 6))
-sns.lineplot(data=combined_df, x='fecha', y='ventas_boletos')
-plt.title('Ventas de Boletos Semanales')
-plt.xlabel('Fecha')
+# Rellenar los valores nulos con 0 (o cualquier otra estrategia que se considere adecuada)
+datos_combinados.fillna(0, inplace=True)
+
+# Asegurarse de que la columna 'fecha' sea de tipo datetime
+datos_combinados['fecha'] = pd.to_datetime(datos_combinados['fecha'])
+
+# Análisis gráfico de las ventas semanales
+ventas_semanales = datos_combinados.groupby(datos_combinados['fecha'].dt.to_period('W'))['ventas_boletos'].sum()
+
+# Graficar las ventas semanales
+ventas_semanales.plot(kind='line', figsize=(10, 6))
+plt.title('Ventas Semanales de Boletos')
+plt.xlabel('Semana')
 plt.ylabel('Ventas de Boletos')
+plt.grid(True)
 plt.show()
 
-# Gráfico de barras para las ventas promedio de boletos en semanas con y sin eventos promocionales
-plt.figure(figsize=(10, 6))
-sns.barplot(data=combined_df, x='eventos_promocionales', y='ventas_boletos')
-plt.title('Ventas Promedio de Boletos: Semanas con vs. sin Eventos Promocionales')
-plt.xlabel('Eventos Promocionales')
+# Crear una columna que indique si hubo promoción o no
+datos_combinados['promocion'] = datos_combinados['eventos_promocionales'].apply(lambda x: 'Con Promoción' if x > 0 else 'Sin Promoción')
+
+# Graficar las ventas promedio con y sin promoción
+ventas_promocion = datos_combinados.groupby('promocion')['ventas_boletos'].mean()
+
+ventas_promocion.plot(kind='bar', color=['green', 'red'], figsize=(8, 6))
+plt.title('Ventas Promedio con y sin Promoción')
+plt.xlabel('Tipo de Semana')
 plt.ylabel('Ventas Promedio de Boletos')
+plt.xticks(rotation=0)
 plt.show()
 
-# Box plot para identificar outliers en las ventas de boletos
-plt.figure(figsize=(10, 6))
-sns.boxplot(data=combined_df, y='ventas_boletos')
-plt.title('Detección de Outliers en Ventas de Boletos')
-plt.ylabel('Ventas de Boletos')
+# Detección de outliers utilizando un boxplot
+plt.figure(figsize=(8, 6))
+sns.boxplot(x=datos_combinados['ventas_boletos'])
+plt.title('Detección de Outliers en las Ventas de Boletos')
 plt.show()
 
-# Calcular la correlación entre las variables
-correlation_matrix = combined_df[['ventas_boletos', 'calificacion', 'eventos_promocionales', 'participacion_promocion']].corr()
-print("Matriz de correlación:\n", correlation_matrix)
+# Calcular la correlación entre las variables de interés
+correlaciones = datos_combinados[['ventas_boletos', 'calificacion', 'eventos_promocionales', 'participacion_promocion']].corr()
 
-# Preparar los datos para el modelo de regresión
-X = combined_df[['calificacion', 'eventos_promocionales', 'participacion_promocion']]
-y = combined_df['ventas_boletos']
+# Visualizar la matriz de correlación
+plt.figure(figsize=(8, 6))
+sns.heatmap(correlaciones, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Matriz de Correlación')
+plt.show()
 
-# Añadir una constante al modelo
+# Definir las variables independientes (X) y la variable dependiente (y)
+X = datos_combinados[['calificacion', 'eventos_promocionales', 'participacion_promocion']]
+y = datos_combinados['ventas_boletos']
+
+# Añadir una constante para el modelo (intercepto)
 X = sm.add_constant(X)
 
 # Entrenar el modelo de regresión lineal
-model = sm.OLS(y, X).fit()
+modelo = sm.OLS(y, X).fit()
 
-# Resumen del modelo
-print(model.summary())
+# Ver el resumen del modelo
+print(modelo.summary())
 
 # Realizar predicciones
-predictions = model.predict(X)
+predicciones = modelo.predict(X)
 
-# Gráfico comparando los valores reales frente a los predichos
-plt.figure(figsize=(10, 6))
-plt.scatter(y, predictions)
-plt.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=2)
-plt.title('Valores Reales vs. Predichos')
-plt.xlabel('Valores Reales')
-plt.ylabel('Valores Predichos')
+# Graficar los valores reales frente a los predichos
+plt.figure(figsize=(8, 6))
+plt.plot(y, label='Ventas Reales', color='blue')
+plt.plot(predicciones, label='Ventas Predichas', color='red', linestyle='--')
+plt.title('Ventas Reales vs Ventas Predichas')
+plt.xlabel('Semana')
+plt.ylabel('Ventas de Boletos')
+plt.legend()
 plt.show()
